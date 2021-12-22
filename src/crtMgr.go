@@ -12,10 +12,15 @@ var mgr *crtMgr
 var single sync.Once
 
 type crtMgr struct {
-	crtPool        []*crt
+	crtPool []*crt
+	buckets []*readyCrtsBuckets
+	Wait    *sync.WaitGroup
+}
+
+type readyCrtsBuckets struct {
 	readyCrts      map[int]*crt
-	readyCrtsMutex sync.RWMutex
-	Wait           *sync.WaitGroup
+	cap            int
+	readyCrtsMutex *sync.RWMutex
 }
 
 // GetMgr get the CrtMgr; CrtMgr is a singleton
@@ -29,22 +34,23 @@ func GetMgr() *crtMgr {
 	return mgr
 }
 
-// create coroutine ...
-func (this *crtMgr) CreateCrts(nums int) {
+// CreateCrts ...
+func (this *crtMgr) CreateCrts(bucketNums int, numsEachBucket int) {
 	rand.Seed(time.Now().UnixNano())
-	this.readyCrts = make(map[int]*crt)
-	for i := 0; i < nums; i++ {
-		//TODO: create coroutine
-		fooCrt := newCrt()
-		fmt.Println("creatcrt", i, "success")
-		this.crtPool = append(this.crtPool, fooCrt)
-		//this.crtPool[i] = fooCrt
-		// this.readyCrts[i] = fooCrt
-	}
+	this.buckets = make([]*readyCrtsBuckets, bucketNums)
+	this.crtPool = make([]*crt, bucketNums*numsEachBucket)
 
-	for nums != len(this.readyCrts) {
-		time.Sleep(200 * time.Millisecond)
-		fmt.Println("total:", nums, "readyCrts:", len(this.readyCrts))
+	for bucketId := 0; bucketId < bucketNums; bucketId++ {
+		bucket := new(readyCrtsBuckets)
+		bucket.cap = numsEachBucket
+		bucket.readyCrts = make(map[int]*crt)
+		bucket.readyCrtsMutex = new(sync.RWMutex)
+		this.buckets[bucketId] = bucket
+		for id := bucketId * numsEachBucket; id < (bucketId+1)*numsEachBucket; id++ {
+			fooCrt := newCrt(id, bucketId)
+			this.crtPool[id] = fooCrt
+		}
+
 	}
 
 }
@@ -63,38 +69,47 @@ func (this *crtMgr) Process(t *task) bool {
 }
 
 func (this *crtMgr) KillAllCoroutine(params []interface{}) {
-	total := len(this.crtPool)
-	for total != len(this.readyCrts) {
-		time.Sleep(100 * time.Millisecond)
-		//fmt.Println("total:", total, "readyCrts:", len(this.readyCrts))
+
+	for id, bucket := range this.buckets {
+		for bucket.cap != len(bucket.readyCrts) {
+			time.Sleep(100 * time.Millisecond)
+			fmt.Println("bucket[", id, "]:", "total: ", bucket.cap, "readyCrts:", len(bucket.readyCrts))
+		}
 	}
 
-	for i := 0; i < total; i++ {
-		foo := new(task)
-		foo.release = true
-		this.Process(foo)
+	killTask := new(task)
+	killTask.release = true
+
+	for _, crt := range this.crtPool {
+		crt.task = killTask
+		crt.wakeup()
 	}
 }
 
 // pop a ready coroutine
 func (this *crtMgr) popReadyCrt() *crt {
-	var fooIdx int
-	this.readyCrtsMutex.Lock()
+	var crtIdx int
 
-	for len(this.readyCrts) <= 0 {
-		this.readyCrtsMutex.Unlock()
+	randBucketId := rand.Intn(len(this.buckets))
+
+	bucket := this.buckets[randBucketId]
+
+	bucket.readyCrtsMutex.Lock()
+
+	for len(bucket.readyCrts) <= 0 {
+		bucket.readyCrtsMutex.Unlock()
 		time.Sleep(100 * time.Millisecond)
-		this.readyCrtsMutex.Lock()
+		bucket.readyCrtsMutex.Lock()
 	}
 
-	for key, _ := range this.readyCrts {
-		fooIdx = key
+	for key, _ := range bucket.readyCrts {
+		crtIdx = key
 		break
 	}
 
-	delete(this.readyCrts, fooIdx)
-	this.readyCrtsMutex.Unlock()
+	delete(bucket.readyCrts, crtIdx)
+	bucket.readyCrtsMutex.Unlock()
 
-	foo := this.crtPool[fooIdx]
-	return foo
+	crt := this.crtPool[crtIdx]
+	return crt
 }

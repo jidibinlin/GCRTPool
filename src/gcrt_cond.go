@@ -22,9 +22,9 @@ func (c *GCRTCond) wait(crt *crt) {
 	c.checker.check()
 	t := runtime_notifyListAdd(&c.notify)
 	c.L.Unlock()
-	GetMgr().readyCrtsMutex.Lock()
-	GetMgr().readyCrts[crt.id] = crt
-	GetMgr().readyCrtsMutex.Unlock()
+	GetMgr().buckets[crt.bucketId].readyCrtsMutex.Lock()
+	GetMgr().buckets[crt.bucketId].readyCrts[crt.id] = crt
+	GetMgr().buckets[crt.bucketId].readyCrtsMutex.Unlock()
 	runtime_notifyListWait(&c.notify, t)
 	c.L.Lock()
 }

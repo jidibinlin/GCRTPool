@@ -5,29 +5,24 @@ import (
 	"sync"
 )
 
-var id int = 0
-
 type crt struct {
-	id    int
-	task  *task
-	stat  bool //就绪状态 true 为就绪 false 为阻塞状态
-	mutex sync.Mutex
-	cond  *GCRTCond
+	id       int
+	bucketId int
+	task     *task
+	stat     bool //就绪状态 true 为就绪 false 为阻塞状态
+	mutex    sync.Mutex
+	cond     *GCRTCond
 }
 
 // NewCrt create and return a crt
-func newCrt() *crt {
+func newCrt(id int, bucketId int) *crt {
 	foo := new(crt)
 	foo.id = id
-	id += 1
-	GetMgr().Wait.Add(1)
+	foo.bucketId = bucketId
 	foo.cond = newCond(&foo.mutex)
-
 	foo.stat = false
+	GetMgr().Wait.Add(1)
 	go foo.startCrt()
-	// for foo.stat {
-	// 	time.Sleep(100 * time.Millisecond)
-	// }
 	return foo
 }
 
