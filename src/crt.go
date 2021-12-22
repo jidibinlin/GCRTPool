@@ -42,7 +42,7 @@ func (this *crt) startCrt() {
 				break
 			}
 			//fmt.Println("crt", this.id, "process")
-			this.task.function(this.task.params)
+			this.task.function((this.task.params)...)
 			this.task = nil
 			this.cond.L.Unlock()
 		}

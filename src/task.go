@@ -1,7 +1,7 @@
 package GCRTPool
 
 type task struct {
-	function func(params []interface{})
+	function func(params ...interface{})
 	params   []interface{}
 	release  bool
 }
@@ -14,7 +14,7 @@ type task struct {
 // 	return foo
 // }
 
-func CoRun(function func(params []interface{}), params ...interface{}) {
+func CoRun(function func(params ...interface{}), params ...interface{}) {
 	foo := new(task)
 	foo.function = function
 	foo.params = params

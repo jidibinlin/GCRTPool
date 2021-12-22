@@ -9,7 +9,7 @@ import (
 )
 
 // test ...
-func test(params []interface{}) {
+func test(params ...interface{}) {
 	//fmt.Println(params[0])
 	for i := 0; i < 100000; i++ {
 		GCRTPool.CoRun(testCoroutine100000, 1)
@@ -18,7 +18,7 @@ func test(params []interface{}) {
 }
 
 // testCoroutine100000 ...
-func testCoroutine100000(params []interface{}) {
+func testCoroutine100000(params ...interface{}) {
 	for i := 0; i < 1000; i++ {
 
 	}
@@ -29,20 +29,14 @@ func testCoroutine100000(params []interface{}) {
 
 func TestPerformance(t *testing.T) {
 	mgr := GCRTPool.GetMgr()
-	mgr.CreateCrts(2, 2)
+	mgr.CreateCrts(10, 100)
 	//time.Sleep(1 * time.Second)
 	beforeTest := time.Now()
-	// for i := 0; i < 100; i++ {
-	// 	//testCoroutine100000()
-	// 	//fmt.Println("run", i)
-	// 	GCRTPool.CoRun(test, 1)
-	// }
-	i := 1
-	GCRTPool.CoRun(func(params []interface{}) {
-		fmt.Println(i)
-		i += 1
-		fmt.Println(i)
-	}, nil)
+	for i := 0; i < 100; i++ {
+		//testCoroutine100000()
+		//fmt.Println("run", i)
+		GCRTPool.CoRun(test, 1)
+	}
 
 	mgr.KillAllCoroutine(nil)
 	mgr.Wait.Wait()
