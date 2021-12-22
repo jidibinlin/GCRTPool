@@ -19,24 +19,31 @@ func test(params []interface{}) {
 
 // testCoroutine100000 ...
 func testCoroutine100000(params []interface{}) {
-	// for i := 0; i < 10000; i++ {
+	for i := 0; i < 1000; i++ {
 
-	// }
+	}
 
-	time.Sleep(1 * time.Millisecond)
+	//time.Sleep(1 * time.Millisecond)
 
 }
 
 func TestPerformance(t *testing.T) {
 	mgr := GCRTPool.GetMgr()
-	mgr.CreateCrts(10, 100)
+	mgr.CreateCrts(2, 2)
 	//time.Sleep(1 * time.Second)
 	beforeTest := time.Now()
-	for i := 0; i < 100; i++ {
-		//testCoroutine100000()
-		//fmt.Println("run", i)
-		GCRTPool.CoRun(test, 1)
-	}
+	// for i := 0; i < 100; i++ {
+	// 	//testCoroutine100000()
+	// 	//fmt.Println("run", i)
+	// 	GCRTPool.CoRun(test, 1)
+	// }
+	i := 1
+	GCRTPool.CoRun(func(params []interface{}) {
+		fmt.Println(i)
+		i += 1
+		fmt.Println(i)
+	}, nil)
+
 	mgr.KillAllCoroutine(nil)
 	mgr.Wait.Wait()
 
