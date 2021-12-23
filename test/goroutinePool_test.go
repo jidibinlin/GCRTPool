@@ -9,39 +9,29 @@ import (
 )
 
 // test ...
-func test(params ...interface{}) {
-	//fmt.Println(params[0])
-	for i := 0; i < 100000; i++ {
-		GCRTPool.CoRun(testCoroutine100000, 1)
-	}
+// func test(params ...interface{}) {
+// 	//fmt.Println(params[0])
+// 	for i := 0; i < 10000; i++ {
+// 		GCRTPool.CoRun(testOne)
+// 	}
 
-}
+// }
 
-// testCoroutine100000 ...
-func testCoroutine100000(params ...interface{}) {
-	for i := 0; i < 1000; i++ {
-
-	}
-
-	//time.Sleep(1 * time.Millisecond)
-
+func testOne() {
+	time.Sleep(time.Duration(10) * time.Millisecond)
 }
 
 func TestPerformance(t *testing.T) {
-	mgr := GCRTPool.GetMgr()
-	mgr.CreateCrts(10, 100)
-	//time.Sleep(1 * time.Second)
-	beforeTest := time.Now()
-	for i := 0; i < 100; i++ {
-		//testCoroutine100000()
-		//fmt.Println("run", i)
-		GCRTPool.CoRun(test, 1)
+	mgr := GCRTPool.NewMgr()
+	mgr.CreateCrts(2000, 100)
+	fmt.Println("startTime", time.Now())
+	for j := 0; j < threads; j++ {
+		mgr.CoRun(func() {
+			for i := 0; i < RunTimes; i++ {
+				mgr.CoRun(testOne)
+			}
+		})
 	}
-
 	mgr.KillAllCoroutine(nil)
 	mgr.Wait.Wait()
-
-	afterTest := time.Now()
-
-	fmt.Println(afterTest, beforeTest)
 }
